@@ -40,6 +40,10 @@
   .dd-menu label:hover { background: #eaf3ef; }
   .dd-menu input { width: 17px; height: 17px; accent-color: #1f6f5c; }
   .dd-status { font-size: .82rem; color: #1f6f5c; font-weight: 600; margin-top: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: #eaf3ef; border: 1px solid #c7d8d0; border-radius: 20px; padding: 4px 10px; font-size: .85rem; font-weight: 600; color: #1f6f5c; }
+  .chip-remove { cursor: pointer; font-weight: 700; color: #c0392b; padding: 0 2px; font-size: .95rem; line-height: 1; }
+  .chip-remove:hover { color: #96281b; }
   .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; margin: 8px 0; }
   .check-grid label { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 400; }
   .check-grid input { width: 18px; height: 18px; accent-color: #1f6f5c; }
@@ -143,6 +147,7 @@
         <div class="dd-menu" id="ddMeatMenu"></div>
       </div>
       <div class="dd-status" id="meatStatus"></div>
+      <div class="chips" id="meatChips"></div>
     </div>
 
     <p style="font-size:.9rem; color:#666; margin-top:6px;"><b>Гарнир</b> — отметьте галочками в раскрывающемся списке:</p>
@@ -152,6 +157,7 @@
         <div class="dd-menu" id="ddGarnishMenu"></div>
       </div>
       <div class="dd-status" id="garnishStatus"></div>
+      <div class="chips" id="garnishChips"></div>
     </div>
 
     <div class="field-block">
@@ -348,7 +354,46 @@
     var garnish = getGarnishSel();
     el('meatStatus').textContent = meat.length ? 'Выбрано: ' + meat.map(function (v) { return MEAT_OPTIONS.find(function(m){return m.v===v;}).t; }).join(', ') : 'Ничего не выбрано';
     el('garnishStatus').textContent = garnish.length ? 'Выбрано: ' + garnish.join(', ') : 'Ничего не выбрано';
+    renderChips();
   }
+
+  // === Чипы выбранных элементов (белки и гарниры) ===
+  function renderChips() {
+    var meat = getMeatSel();
+    var garnish = getGarnishSel();
+    var mc = el('meatChips');
+    mc.innerHTML = '';
+    meat.forEach(function (v) {
+      var m = MEAT_OPTIONS.find(function(x){return x.v===v;});
+      var chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = m.t + ' <span class="chip-remove" data-type="meat" data-val="' + v + '">×</span>';
+      mc.appendChild(chip);
+    });
+    var gc = el('garnishChips');
+    gc.innerHTML = '';
+    garnish.forEach(function (v) {
+      var chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = v + ' <span class="chip-remove" data-type="garnish" data-val="' + v + '">×</span>';
+      gc.appendChild(chip);
+    });
+  }
+
+  // Клик по крестику чипа — снимает выбор
+  document.addEventListener('click', function (e) {
+    var rm = e.target.closest('.chip-remove');
+    if (rm) {
+      var type = rm.getAttribute('data-type');
+      var val = rm.getAttribute('data-val');
+      var menu = type === 'meat' ? el('ddMeatMenu') : el('ddGarnishMenu');
+      var cb = menu.querySelector('input[value="' + val + '"]');
+      if (cb) { cb.checked = false; updateDDStatus(); }
+      var ddBtn = type === 'meat' ? el('ddMeat') : el('ddGarnish');
+      ddBtn.classList.remove('open');
+      e.stopPropagation();
+    }
+  });
 
   function buildDays() {
     var meatSel = getMeatSel();
