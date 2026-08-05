@@ -86,19 +86,19 @@
       </div>
       <div>
         <label for="pAge">Возраст (лет)</label>
-        <input type="number" id="pAge" min="18" max="90" value="35">
+        <input type="number" id="pAge" min="18" max="90" placeholder="Например, 35">
       </div>
       <div>
         <label for="pHeight">Рост (см)</label>
-        <input type="number" id="pHeight" min="140" max="220" value="183">
+        <input type="number" id="pHeight" min="140" max="220" placeholder="Например, 183">
       </div>
       <div>
         <label for="pWeight">Текущий вес (кг)</label>
-        <input type="number" id="pWeight" min="40" max="250" value="127">
+        <input type="number" id="pWeight" min="40" max="250" placeholder="Например, 127">
       </div>
       <div>
         <label for="pTarget">Целевой вес (кг)</label>
-        <input type="number" id="pTarget" min="40" max="200" value="85">
+        <input type="number" id="pTarget" min="40" max="200" placeholder="Например, 85">
       </div>
       <div>
         <label for="pActivity">Активность</label>
@@ -669,15 +669,16 @@
 
   function buildPlan() {
     P.gender = el('pGender').value;
-    P.age = parseInt(el('pAge').value, 10) || 35;
-    P.height = parseInt(el('pHeight').value, 10) || 183;
-    P.weight = parseFloat(el('pWeight').value) || 127;
-    P.target = parseFloat(el('pTarget').value) || 85;
+    P.age = parseInt(el('pAge').value, 10);
+    P.height = parseInt(el('pHeight').value, 10);
+    P.weight = parseFloat(el('pWeight').value);
+    P.target = parseFloat(el('pTarget').value);
     P.activity = el('pActivity').value;
     P.meat = el('pMeat').value;
     P.garnish = el('pGarnish').value;
     P.fishDays = el('pFishDays').value;
     P.avoid = Array.prototype.map.call(el('avoidWrap').querySelectorAll('input:checked'), function(c){ return c.value; });
+    if (!P.age || !P.height || !P.weight || !P.target) { alert('Пожалуйста, заполните все параметры: возраст, рост, текущий вес и целевой вес.'); return; }
     if (P.target >= P.weight) { alert('Целевой вес должен быть меньше текущего.'); return; }
 
     var bmr = calcBMR(P.gender, P.age, P.height, P.weight);
