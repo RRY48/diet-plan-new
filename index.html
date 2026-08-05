@@ -29,9 +29,17 @@
   .field-block { margin-bottom: 10px; }
   .field-block label { display: block; font-size: .92rem; font-weight: 600; margin-bottom: 4px; }
   .field-block input[type=number], .field-block select { padding: 6px 10px; border: 2px solid #c7d8d0; border-radius: 8px; font-size: 1rem; width: 100%; max-width: 260px; }
-  select[multiple] { height: auto; min-height: 80px; }
-  select[multiple] option { padding: 4px 8px; }
   .hint { font-size: .8rem; color: #888; margin-top: 2px; }
+  .dd-block { position: relative; max-width: 260px; }
+  .dd-btn { width: 100%; padding: 8px 10px; border: 2px solid #c7d8d0; border-radius: 8px; background: #fff; cursor: pointer; font-size: .92rem; text-align: left; color: #2d3436; display: flex; justify-content: space-between; align-items: center; }
+  .dd-btn:hover, .dd-block.open .dd-btn { border-color: #1f6f5c; }
+  .dd-arrow { font-size: .7rem; color: #888; }
+  .dd-menu { display: none; position: absolute; top: 100%; left: 0; z-index: 1000; background: #fff; border: 2px solid #c7d8d0; border-radius: 8px; width: 100%; max-height: 220px; overflow-y: auto; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+  .dd-block.open .dd-menu { display: block; }
+  .dd-menu label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: .9rem; font-weight: 400; cursor: pointer; border-radius: 6px; }
+  .dd-menu label:hover { background: #eaf3ef; }
+  .dd-menu input { width: 17px; height: 17px; accent-color: #1f6f5c; }
+  .dd-status { font-size: .82rem; color: #1f6f5c; font-weight: 600; margin-top: 4px; }
   .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; margin: 8px 0; }
   .check-grid label { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 400; }
   .check-grid input { width: 18px; height: 18px; accent-color: #1f6f5c; }
@@ -128,14 +136,22 @@
     <div style="margin:8px 0;"><button type="button" class="btn btn-check" style="padding:6px 16px; margin:0;" onclick="selectAllAvoids()">☑ Выбрать все</button> <button type="button" class="btn btn-reset" style="padding:6px 16px; margin:0;" onclick="clearAvoids()">✕ Снять все</button></div>
     <div class="check-grid" id="avoidWrap"></div>
 
-    <p style="font-size:.9rem; color:#666; margin-top:12px;"><b>Основной белок</b> — можно выбрать несколько (зажмите Ctrl при выборе):</p>
+    <p style="font-size:.9rem; color:#666; margin-top:12px;"><b>Основной белок</b> — отметьте галочками в раскрывающемся списке:</p>
     <div class="field-block">
-      <select id="pMeat" multiple></select>
+      <div class="dd-block" id="ddMeat">
+        <button type="button" class="dd-btn" onclick="toggleDD('ddMeat')">Выбрать белки <span class="dd-arrow">▼</span></button>
+        <div class="dd-menu" id="ddMeatMenu"></div>
+      </div>
+      <div class="dd-status" id="meatStatus"></div>
     </div>
 
-    <p style="font-size:.9rem; color:#666; margin-top:6px;"><b>Гарнир</b> — можно выбрать несколько (зажмите Ctrl при выборе):</p>
+    <p style="font-size:.9rem; color:#666; margin-top:6px;"><b>Гарнир</b> — отметьте галочками в раскрывающемся списке:</p>
     <div class="field-block">
-      <select id="pGarnish" multiple></select>
+      <div class="dd-block" id="ddGarnish">
+        <button type="button" class="dd-btn" onclick="toggleDD('ddGarnish')">Выбрать гарниры <span class="dd-arrow">▼</span></button>
+        <div class="dd-menu" id="ddGarnishMenu"></div>
+      </div>
+      <div class="dd-status" id="garnishStatus"></div>
     </div>
 
     <div class="field-block">
@@ -144,7 +160,7 @@
         <option value="0">0 (не добавлять)</option>
         <option value="2" selected>2</option><option value="3">3</option><option value="4">4</option>
       </select>
-      <div class="hint">Применяется, если «Рыба» выбрана в списке белков</div>
+      <div class="hint">Применяется, если «Рыба» отмечена в списке белков</div>
     </div>
 
     <button type="button" class="btn" onclick="buildPlan()">Сформировать меню →</button>
@@ -306,12 +322,39 @@
     return Math.round(10 * w + 6.25 * h - 5 * age + (g === 'm' ? 5 : -161));
   }
 
+  // === Чтение выбранных чекбоксов из dropdown ===
+  function getMeatSel() {
+    return Array.prototype.map.call(el('ddMeatMenu').querySelectorAll('input:checked'), function (c) { return c.value; });
+  }
+  function getGarnishSel() {
+    return Array.prototype.map.call(el('ddGarnishMenu').querySelectorAll('input:checked'), function (c) { return c.value; });
+  }
+
+  // === Dropdown: открытие/закрытие ===
+  function toggleDD(id) {
+    var node = el(id);
+    var wasOpen = node.classList.contains('open');
+    document.querySelectorAll('.dd-block.open').forEach(function (o) { o.classList.remove('open'); });
+    if (!wasOpen) node.classList.add('open');
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.dd-block')) {
+      document.querySelectorAll('.dd-block.open').forEach(function (o) { o.classList.remove('open'); });
+    }
+  });
+
+  function updateDDStatus() {
+    var meat = getMeatSel();
+    var garnish = getGarnishSel();
+    el('meatStatus').textContent = meat.length ? 'Выбрано: ' + meat.map(function (v) { return MEAT_OPTIONS.find(function(m){return m.v===v;}).t; }).join(', ') : 'Ничего не выбрано';
+    el('garnishStatus').textContent = garnish.length ? 'Выбрано: ' + garnish.join(', ') : 'Ничего не выбрано';
+  }
+
   function buildDays() {
-    // Множественный выбор белков и гарниров
-    var meatSel = Array.prototype.map.call(el('pMeat').selectedOptions, function (o) { return o.value; });
-    var garnishSel = Array.prototype.map.call(el('pGarnish').selectedOptions, function (o) { return o.value; });
-    if (!meatSel.length) { alert('Выберите хотя бы один основной белок.'); return false; }
-    if (!garnishSel.length) { alert('Выберите хотя бы один гарнир.'); return false; }
+    var meatSel = getMeatSel();
+    var garnishSel = getGarnishSel();
+    if (!meatSel.length) { alert('Отметьте хотя бы один основной белок галочкой.'); return false; }
+    if (!garnishSel.length) { alert('Отметьте хотя бы один гарнир галочкой.'); return false; }
 
     var fishDays = parseInt(P.fishDays, 10) || 0;
     var hasFish = meatSel.indexOf('fish') !== -1;
@@ -329,7 +372,6 @@
     };
 
     for (var d = 0; d < 7; d++) {
-      // Выбор источника белка: дни с рыбой сначала, затем остальные по кругу
       var src;
       if (useFish && d < fishDays) {
         src = MEAT_OPTIONS.find(function (m) { return m.v === 'fish'; });
@@ -427,8 +469,8 @@
     var cheeseNote = avoid.indexOf('cheese') !== -1 ? ' <b>Сыр — исключён</b>' : '';
     var yogurtNote = avoid.indexOf('yogurt') !== -1 ? ' <b>Йогурт — исключён</b>' : '';
     var honeyNote = avoid.indexOf('honey') !== -1 ? ', вместо мёда джем' : ', джем';
-    var meatSel = Array.prototype.map.call(el('pMeat').selectedOptions, function (o) { return o.value; });
-    var garnishSel = Array.prototype.map.call(el('pGarnish').selectedOptions, function (o) { return o.value; });
+    var meatSel = getMeatSel();
+    var garnishSel = getGarnishSel();
     var meatNames = meatSel.map(function (v) { return MEAT_OPTIONS.find(function(m){return m.v===v;}).t; }).join(', ');
     var garnishNames = garnishSel.join(', ');
 
@@ -461,8 +503,8 @@
       '<li>Ориентировочный срок до ' + P.target + ' кг: <b>' + Math.max(1, Math.round(left / 0.7)) + '–' + Math.max(2, Math.round(left / 0.4)) + ' месяцев</b> при соблюдении.</li>',
       '<li>Целевой вес даст ИМТ ≈ ' + (P.target / Math.pow(P.height / 100, 2)).toFixed(1) + ' — ' + ((P.target / Math.pow(P.height / 100, 2)) < 25 ? 'в пределах нормы' : 'верхняя граница нормы — цель стоит обсудить с врачом') + '.</li>'
     ].join('');
-    var meatSel = Array.prototype.map.call(el('pMeat').selectedOptions, function (o) { return o.value; });
-    var garnishSel = Array.prototype.map.call(el('pGarnish').selectedOptions, function (o) { return o.value; });
+    var meatSel = getMeatSel();
+    var garnishSel = getGarnishSel();
     var meatNames = meatSel.map(function (v) { return MEAT_OPTIONS.find(function(m){return m.v===v;}).t; }).join(', ');
     el('personalNote').innerHTML = '<b>Индивидуальные особенности:</b> пол — ' + (P.gender === 'm' ? 'мужчина' : 'женщина') + ', возраст ' + P.age + ', рост ' + P.height + ' см, стартовый вес ' + P.weight0 + ' кг, целевой ' + P.target + ' кг, активность: ' + (P.activity === '1.2' ? 'сидячая' : P.activity === '1.375' ? 'лёгкая' : P.activity === '1.55' ? 'средняя' : 'высокая') + '. <b>Исключено:</b> ' + (a.length ? a.map(function (k) { return AVOID_ALL[k]; }).join(', ') : 'ничего') + '. <b>Белки:</b> ' + meatNames + '. <b>Гарниры:</b> ' + garnishSel.join(', ') + '.';
     el('docWarn').innerHTML = '<b>Важно:</b> перед началом программы проконсультируйтесь с врачом. При высоком ИМТ (' + bmi.toFixed(1) + ') нагрузка на суставы и сердце высокая, резкие диеты противопоказаны.';
@@ -780,14 +822,33 @@
     label.appendChild(document.createTextNode(AVOID_ALL[key]));
     avoidWrap.appendChild(label);
   });
+
+  // === Dropdown с чекбоксами: белки ===
+  var ddMeat = el('ddMeatMenu');
+  ddMeat.innerHTML = '';
   MEAT_OPTIONS.forEach(function (m) {
-    var o = document.createElement('option'); o.value = m.v; o.textContent = m.t; o.selected = (m.v === 'chicken' || m.v === 'fish');
-    el('pMeat').appendChild(o);
+    var label = document.createElement('label');
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = m.v; cb.checked = (m.v === 'chicken' || m.v === 'fish');
+    cb.onchange = updateDDStatus;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(m.t));
+    ddMeat.appendChild(label);
   });
+
+  // === Dropdown с чекбоксами: гарниры ===
+  var ddGarnish = el('ddGarnishMenu');
+  ddGarnish.innerHTML = '';
   GARNISH_OPTIONS.forEach(function (g) {
-    var o = document.createElement('option'); o.value = g; o.textContent = g; o.selected = (g === 'Гречка' || g === 'Рис');
-    el('pGarnish').appendChild(o);
+    var label = document.createElement('label');
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = g; cb.checked = (g === 'Гречка' || g === 'Рис');
+    cb.onchange = updateDDStatus;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(g));
+    ddGarnish.appendChild(label);
   });
+  updateDDStatus();
 
   // При вводе параметров обновляем ИМТ сразу (если блок виден)
   ['pAge','pHeight','pWeight','pTarget'].forEach(function (id) {
@@ -802,6 +863,7 @@
   window.resetAll = resetAll;
   window.selectAllAvoids = selectAllAvoids;
   window.clearAvoids = clearAvoids;
+  window.toggleDD = toggleDD;
 })();
 </script>
 </body>
