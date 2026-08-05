@@ -249,6 +249,53 @@
     set: function (k, v) { try { localStorage.setItem('dietplan_' + k, JSON.stringify(v)); } catch (e) {} }
   };
 
+  // === Сохранение всего состояния в localStorage ===
+  function saveState() {
+    store.set('state', {
+      gender: el('pGender').value,
+      age: el('pAge').value,
+      height: el('pHeight').value,
+      weight: el('pWeight').value,
+      target: el('pTarget').value,
+      activity: el('pActivity').value,
+      meat: getMeatSel(),
+      garnish: getGarnishSel(),
+      fishDays: el('pFishDays').value,
+      avoids: Array.prototype.map.call(el('avoidWrap').querySelectorAll('input:checked'), function (c) { return c.value; }),
+      step: true
+    });
+  }
+
+  // === Восстановление состояния при загрузке ===
+  function loadState() {
+    var s = store.get('state', null);
+    if (!s) return;
+    el('pGender').value = s.gender || 'm';
+    if (s.age) el('pAge').value = s.age;
+    if (s.height) el('pHeight').value = s.height;
+    if (s.weight) el('pWeight').value = s.weight;
+    if (s.target) el('pTarget').value = s.target;
+    if (s.activity) el('pActivity').value = s.activity;
+    if (s.fishDays) el('pFishDays').value = s.fishDays;
+    // Отметить выбранные белки/гарниры в dropdown
+    Array.prototype.forEach.call(el('ddMeatMenu').querySelectorAll('input[type=checkbox]'), function (cb) {
+      cb.checked = (s.meat || []).indexOf(cb.value) !== -1;
+    });
+    Array.prototype.forEach.call(el('ddGarnishMenu').querySelectorAll('input[type=checkbox]'), function (cb) {
+      cb.checked = (s.garnish || []).indexOf(cb.value) !== -1;
+    });
+    // Восстановить исключения
+    Array.prototype.forEach.call(el('avoidWrap').querySelectorAll('input[type=checkbox]'), function (cb) {
+      cb.checked = (s.avoids || []).indexOf(cb.value) !== -1;
+    });
+    updateDDStatus();
+    if (s.step) {
+      el('bmiPanel').style.display = '';
+      el('prefsPanel').style.display = '';
+      updateBMI();
+    }
+  }
+
   var AVOID_ALL = {
     beef: 'Говядину', nuts: 'Орехи (грецкие и др.)', milk: 'Молоко', kefir: 'Кефир', cheese: 'Сыр', yogurt: 'Йогурт',
     cabbage: 'Капусту (все виды)', beets: 'Свёклу', pumpkin: 'Тыкву', cauliflower: 'Цветную капусту', broccoli: 'Брокколи',
@@ -794,6 +841,7 @@
     el('bmiPanel').style.display = '';
     el('prefsPanel').style.display = '';
     window.scrollTo(0, 400);
+    saveState();
   }
 
   function buildPlan() {
@@ -838,6 +886,7 @@
     el('planContainer').style.display = '';
     updateBMI();
     renderPlan();
+    saveState();
   }
 
   function resetAll() {
@@ -895,13 +944,33 @@
   });
   updateDDStatus();
 
-  // При вводе параметров обновляем ИМТ сразу (если блок виден)
-  ['pAge','pHeight','pWeight','pTarget'].forEach(function (id) {
+  // Сохранение при изменении чекбоксов белков/гарниров
+  Array.prototype.forEach.call(el('ddMeatMenu').querySelectorAll('input[type=checkbox]'), function (cb) {
+    var old = cb.onchange;
+    cb.onchange = function (e) { if (old) old.call(this, e); saveState(); };
+  });
+  Array.prototype.forEach.call(el('ddGarnishMenu').querySelectorAll('input[type=checkbox]'), function (cb) {
+    var old = cb.onchange;
+    cb.onchange = function (e) { if (old) old.call(this, e); saveState(); };
+  });
+  // Сохранение при изменении исключений
+  Array.prototype.forEach.call(el('avoidWrap').querySelectorAll('input[type=checkbox]'), function (cb) {
+    cb.onchange = saveState;
+  });
+
+  // При вводе параметров обновляем ИМТ и сохраняем состояние
+  ['pAge','pHeight','pWeight','pTarget','pGender','pActivity','pFishDays'].forEach(function (id) {
     var inp = el(id);
     inp.addEventListener('input', function () {
       if (el('bmiPanel').style.display !== 'none') updateBMI();
+      saveState();
     });
+    inp.addEventListener('change', saveState);
   });
+
+  // Восстановление сохранённого состояния
+  loadState();
+  updateDDStatus();
 
   window.buildPlan = buildPlan;
   window.nextStep = nextStep;
