@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Индивидуальная программа питания</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f6f4; color: #2d3436; line-height: 1.55; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  header.hero { background: linear-gradient(135deg, #1f6f5c, #2e8b74); color: #fff; border-radius: 14px; padding: 30px 28px; margin-bottom: 22px; }
+  header.hero h1 { font-size: 1.7rem; margin-bottom: 6px; }
+  header.hero p { opacity: .92; font-size: .98rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 18px; }
+  .stat { background: rgba(255,255,255,.14); border-radius: 10px; padding: 10px 12px; }
+  .stat span { display: block; font-size: .78rem; opacity: .85; }
+  .stat b { display: block; font-size: 1.35rem; }
+  h2 { font-size: 1.25rem; color: #1f6f5c; margin: 30px 0 12px; border-left: 5px solid #1f6f5c; padding-left: 12px; }
+  h3 { font-size: 1.05rem; color: #2d3436; margin: 10px 0 6px; }
+  p, li { font-size: .97rem; }
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; background: #fff; border-radius: 8px; overflow: hidden; font-size: .93rem; }
+  th, td { border: 1px solid #dde7e2; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #eaf3ef; font-weight: 600; }
+  .note { background: #fff8e6; border-left: 4px solid #e6b545; padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: .93rem; }
+  .ok { background: #e8f7ef; border-left: 4px solid #27ae60; padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: .93rem; }
+  .warn { background: #fdeeee; border-left: 4px solid #c0392b; padding: 10px 14px; border-radius: 6px; margin: 12px 0; font-size: .93rem; }
+  .panel { background: #fff; border-radius: 10px; padding: 16px 18px; margin: 14px 0; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .panel label { display: block; font-size: .92rem; font-weight: 600; margin: 8px 0 4px; }
+  .panel input[type=number], .panel select { padding: 6px 10px; border: 2px solid #c7d8d0; border-radius: 8px; font-size: 1rem; width: 100%; max-width: 220px; }
+  .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; margin: 8px 0; }
+  .check-grid label { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 400; }
+  .check-grid input { width: 18px; height: 18px; accent-color: #1f6f5c; }
+  .select-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { background: #1f6f5c; color: #fff; border: none; padding: 12px 28px; border-radius: 30px; font-size: 1.02rem; cursor: pointer; margin-top: 12px; font-weight: 700; }
+  .btn:hover { background: #185545; }
+  .btn-reset { background: #95a5a6; }
+  .btn-reset:hover { background: #7f8c8d; }
+  .bmi-output, .calc-output { margin-top: 12px; font-size: .97rem; background: #f9fbfa; border-radius: 8px; padding: 12px 14px; }
+  .day-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .day-tab { padding: 8px 14px; border: 2px solid #c7d8d0; border-radius: 20px; background: #fff; color: #2d3436; font-size: .9rem; cursor: pointer; font-weight: 600; }
+  .day-tab:hover { border-color: #1f6f5c; }
+  .day-tab.active { background: #1f6f5c; border-color: #1f6f5c; color: #fff; }
+  .stage-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .stage-btn { padding: 8px 14px; border: 2px solid #c7d8d0; border-radius: 20px; background: #fff; color: #2d3436; font-size: .9rem; cursor: pointer; font-weight: 700; }
+  .stage-btn.active { background: #1f6f5c; border-color: #1f6f5c; color: #fff; }
+  .stage-info { background: #f9fbfa; border: 1px dashed #c7d8d0; border-radius: 10px; padding: 10px 14px; font-size: .93rem; margin-top: 8px; }
+  .meal-check { width: 18px; height: 18px; cursor: pointer; accent-color: #1f6f5c; vertical-align: middle; margin-right: 8px; }
+  .meal-hidden td { background: #fdeeee; text-decoration: line-through; opacity: .6; }
+  .meal-note td { background: #e8f5ee; color: #1f6f5c; font-weight: 600; font-size: .88rem; }
+  .total-stage td { background: #eaf3ef; font-weight: 700; }
+  .progress { height: 18px; background: #eaf3ef; border-radius: 20px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #1f6f5c, #2e8b74); transition: width .3s; }
+  .progress-text { font-size: .88rem; color: #555; font-weight: 600; }
+  .print-btn { position: fixed; right: 20px; bottom: 20px; background: #1f6f5c; color: #fff; border: none; padding: 12px 20px; border-radius: 30px; font-size: .95rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+  .plate { background: #f9fbfa; border: 1px dashed #c7d8d0; border-radius: 10px; padding: 12px 16px; margin: 10px 0; font-size: .93rem; }
+  .footer { margin-top: 34px; font-size: .82rem; color: #777; text-align: center; }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    header.hero { border-radius: 0; }
+    .panel { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+    .day-tabs, .stage-buttons, .progress, .print-btn { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>🍽 Индивидуальная программа питания</h1>
+    <p>Введите свои параметры и предпочтения — программа автоматически рассчитает калорийность и сформирует персональное меню.</p>
+  </header>
+
+  <div class="panel no-print" id="paramsPanel">
+    <h2>🧍 Ваши параметры</h2>
+    <div class="select-row">
+      <div>
+        <label for="pGender">Пол</label>
+        <select id="pGender"><option value="m" selected>Мужчина</option><option value="f">Женщина</option></select>
+      </div>
+      <div>
+        <label for="pAge">Возраст (лет)</label>
+        <input type="number" id="pAge" min="18" max="90" value="35">
+      </div>
+      <div>
+        <label for="pHeight">Рост (см)</label>
+        <input type="number" id="pHeight" min="140" max="220" value="183">
+      </div>
+      <div>
+        <label for="pWeight">Текущий вес (кг)</label>
+        <input type="number" id="pWeight" min="40" max="250" value="127">
+      </div>
+      <div>
+        <label for="pTarget">Целевой вес (кг)</label>
+        <input type="number" id="pTarget" min="40" max="200" value="85">
+      </div>
+      <div>
+        <label for="pActivity">Активность</label>
+        <select id="pActivity">
+          <option value="1.2">Сидячий образ жизни</option>
+          <option value="1.375" selected>Лёгкая нагрузка (1–2 раза/нед)</option>
+          <option value="1.55">Средняя (3–5 раз/нед)</option>
+          <option value="1.725">Высокая (6–7 раз/нед)</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" class="btn" onclick="buildPlan()">Рассчитать программу →</button>
+    <div class="calc-output" id="calcOutput"></div>
+  </div>
+
+  <div class="panel no-print" id="prefsPanel" style="display:none;">
+    <h2>🥗 Предпочтения и ограничения</h2>
+    <p style="font-size:.9rem; color:#666;">Отметьте, что НЕ едите (исключим из меню):</p>
+    <div class="check-grid" id="avoidWrap"></div>
+    <p style="font-size:.9rem; color:#666; margin-top:10px;">Предпочтения по продуктам:</p>
+    <div class="select-row">
+      <div>
+        <label for="pMeat">Основной белок</label>
+        <select id="pMeat"></select>
+      </div>
+      <div>
+        <label for="pGarnish">Гарнир</label>
+        <select id="pGarnish"></select>
+      </div>
+      <div>
+        <label for="pFishDays">Дней с рыбой в неделю</label>
+        <select id="pFishDays">
+          <option value="2" selected>2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" class="btn" onclick="buildPlan()">Сформировать меню →</button>
+    <button type="button" class="btn btn-reset" onclick="resetAll()">Сбросить</button>
+  </div>
+
+  <div id="planContainer" style="display:none;">
+
+    <div class="panel bmi-panel">
+      <h2>⚖️ Ваша цель и ИМТ</h2>
+      <div class="stats" id="dynStats"></div>
+      <div class="bmi-output" id="bmiOutput"></div>
+    </div>
+
+    <h2 id="sec1Title">1. Как устроена программа</h2>
+    <ul id="sec1List"></ul>
+    <div class="note" id="personalNote"></div>
+    <div class="warn" id="docWarn"></div>
+
+    <h2>2. Этапы снижения калорийности</h2>
+    <table id="stageTable"><tr><th>Этап</th><th>Период</th><th>Калорийность</th><th>Комментарий</th></tr></table>
+    <div class="note" id="stageNote"></div>
+
+    <h2>3. Белки, жиры, углеводы (БЖУ)</h2>
+    <table id="bjuTable"><tr><th>Этап (ккал)</th><th>Белки, г</th><th>Жиры, г</th><th>Углеводы, г</th></tr></table>
+    <p id="bjuText"></p>
+
+    <h2>4. Разрешённые продукты (с учётом ваших предпочтений)</h2>
+    <table id="allowedTable"><tr><th>Группа</th><th>Что можно</th></tr></table>
+
+    <h2>5. Убрать или жёстко ограничить</h2>
+    <ul id="avoidList"></ul>
+    <div class="note" id="legumeNote"></div>
+
+    <h2>6. Недельное меню</h2>
+    <div class="note" id="menuDesc"></div>
+
+    <div class="panel" id="stageSwitch">
+      <h2>⚙️ Ваш этап калорийности</h2>
+      <div class="stage-buttons" id="stageButtons"></div>
+      <div class="stage-info" id="stageInfo"></div>
+    </div>
+
+    <div class="panel">
+      <h3>📌 Недельное меню — выберите день</h3>
+      <div class="day-tabs" id="dayTabs"></div>
+      <div class="progress-text" id="progressText">Выполнено: 0 из 0 (0%)</div>
+      <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="panel" id="dayMenuContainer">
+      <h3 id="dayMenuTitle">📅 День 1</h3>
+      <div id="dayMenuTable"></div>
+    </div>
+
+    <h2>7. Как снижать калорийность на следующих этапах</h2>
+    <table id="reduceTable"><tr><th>Что сделать</th><th>≈ минус ккал</th></tr></table>
+    <ul id="reduceSteps"></ul>
+
+    <h2>8. Правила приготовления и «метод тарелки»</h2>
+    <ul id="cookRules"></ul>
+    <div class="plate" id="plateMethod"></div>
+
+    <h2>9. Замены продуктов</h2>
+    <table id="replaceTable"><tr><th>Можно заменить на</th><th>Эквивалент</th></tr></table>
+
+    <h2>10. Вода, режим и сон</h2>
+    <ul id="waterRules"></ul>
+
+    <h2>11. Движение</h2>
+    <ul id="moveRules"></ul>
+
+    <h2>12. Контроль и корректировка</h2>
+    <ul id="controlRules"></ul>
+
+    <div class="ok" id="mainPrinciple"></div>
+    <div class="footer">Программа носит рекомендательный характер и не заменяет консультацию врача.</div>
+  </div>
+
+</div>
+<button class="print-btn no-print" onclick="window.print()">🖨 Распечатать</button>
+<script>
+(function () {
+  var store = {
+    get: function (k, def) { try { var v = localStorage.getItem('dietplan_' + k); return v === null ? def : JSON.parse(v); } catch (e) { return def; } },
+    set: function (k, v) { try { localStorage.setItem('dietplan_' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  var AVOID_ALL = {
+    beef: 'Говядину',
+    nuts: 'Орехи (грецкие и др.)',
+    milk: 'Молоко',
+    kefir: 'Кефир',
+    cheese: 'Сыр',
+    yogurt: 'Йогурт',
+    cabbage: 'Капусту (все виды)',
+    beets: 'Свёклу',
+    pumpkin: 'Тыкву',
+    cauliflower: 'Цветную капусту',
+    broccoli: 'Брокколи',
+    mushrooms: 'Грибы',
+    radish: 'Редис/редьку',
+    soup: 'Супы',
+    steamed: 'Блюда на пару',
+    pork: 'Свинину',
+    processed: 'Колбасы/полуфабрикаты',
+    honey: 'Мёд',
+    mustard: 'Горчицу',
+    chicory: 'Цикорий'
+  };
+
+  var MEAT_OPTIONS = [
+    { v: 'chicken', t: 'Курица', foods: ['Куриная грудка', 'Куриное филе'] },
+    { v: 'turkey', t: 'Индейка', foods: ['Индейка'] },
+    { v: 'fish', t: 'Рыба (основной)', foods: ['Минтай', 'Хек', 'Треска', 'Горбуша', 'Судак'] },
+    { v: 'eggs', t: 'Яйца (основной)', foods: ['Яйца'] },
+    { v: 'cottage', t: 'Творог (основной)', foods: ['Творог 5%'] }
+  ];
+  var GARNISH_OPTIONS = ['Гречка', 'Рис', 'Овсянка', 'Перловка', 'Макароны тв.сортов', 'Картофель'];
+
+  // === Генерация данных меню ===
+  var baseMenus = {
+    chicken: [
+      { br: 'Запечённая в аэрогриле куриная грудка', brk: 575, ob: 'Отварная куриная грудка', obk: 440, uz: 'Куриная грудка, запечённая в аэрогриле', uzk: 470 },
+      { br: 'Омлет из 3 яиц с куриным филе', brk: 520, ob: 'Куриная грудка в аэрогриле', obk: 465, uz: 'Отварная куриная грудка', uzk: 380 },
+      { br: 'Омлет из 4 яиц', brk: 480, ob: 'Отварное куриное филе', obk: 420, uz: 'Куриное филе в аэрогриле', uzk: 450 }
+    ],
+    turkey: [
+      { br: 'Индейка, запечённая в аэрогриле', brk: 560, ob: 'Отварная индейка', obk: 430, uz: 'Индейка в аэрогриле', uzk: 460 },
+      { br: 'Омлет из 3 яиц с индейкой', brk: 510, ob: 'Индейка в аэрогриле', obk: 455, uz: 'Отварная индейка', uzk: 370 },
+      { br: 'Отварное яйцо + индейка', brk: 490, ob: 'Запечённая индейка', obk: 440, uz: 'Индейка в аэрогриле с овощами', uzk: 440 }
+    ],
+    fish: [
+      { br: 'Овсянка на воде с яйцом', brk: 550, ob: 'Минтай, запечённый в аэрогриле', obk: 420, uz: 'Хек в аэрогриле', uzk: 430 },
+      { br: 'Гречневая каша на воде', brk: 500, ob: 'Запечённая треска', obk: 440, uz: 'Горбуша в аэрогриле', uzk: 460 },
+      { br: 'Омлет из 3 яиц', brk: 460, ob: 'Судак, запечённый в аэрогриле', obk: 400, uz: 'Минтай в аэрогриле', uzk: 410 }
+    ],
+    eggs: [
+      { br: 'Омлет из 4 яиц', brk: 480, ob: 'Отварные яйца (3 шт)', obk: 350, uz: 'Омлет из 3 яиц', uzk: 360 },
+      { br: 'Омлет из 3 яиц с овощами', brk: 440, ob: 'Омлет из 4 яиц', obk: 400, uz: 'Отварные яйца (4 шт)', uzk: 380 },
+      { br: 'Овсянка на воде + яйцо', brk: 520, ob: 'Омлет из 3 яиц', obk: 340, uz: 'Омлет из 4 яиц с сыром', uzk: 420 }
+    ],
+    cottage: [
+      { br: 'Творог 5% 200 г с ягодами', brk: 430, ob: 'Творог 5% 250 г', obk: 330, uz: 'Творожная запеканка (без сахара)', uzk: 400 },
+      { br: 'Творог 5% 200 г + яйцо', brk: 480, ob: 'Творог 5% 200 г с зеленью', obk: 310, uz: 'Творог 5% 250 г с орехами', uzk: 420 },
+      { br: 'Творожная запеканка', brk: 460, ob: 'Творог 5% 200 г', obk: 300, uz: 'Творог 5% 200 г', uzk: 300 }
+    ]
+  };
+
+  var VEG_SAFE = ['Огурцы', 'Помидоры', 'Кабачки', 'Баклажаны', 'Морковь', 'Лук', 'Болгарский перец', 'Зелень'];
+  var VEG_GASSY = ['Капуста', 'Свёкла', 'Тыква', 'Цветная капуста', 'Брокколи', 'Грибы', 'Редис', 'Редька'];
+
+  var P = {}; // params
+  var startKcal = 0;
+  var stages = [];
+  var currentDay = 0, currentStage = 0, checks = {};
+  var menuData = []; // 7 дней
+
+  function round10(v) { return Math.max(10, Math.round(v / 10) * 10); }
+
+  function calcBMR(g, age, h, w) {
+    var bmr = 10 * w + 6.25 * h - 5 * age + (g === 'm' ? 5 : -161);
+    return Math.round(bmr);
+  }
+
+  function buildDays() {
+    var meat = MEAT_OPTIONS.find(function (m) { return m.v === P.meat; });
+    var fishDays = parseInt(P.fishDays, 10) || 2;
+    var pool = MEAT_OPTIONS.find(function (m) { return m.v === 'fish'; });
+    var useFish = (P.meat !== 'fish');
+    menuData = [];
+    for (var d = 0; d < 7; d++) {
+      var isFish = d < fishDays && useFish;
+      var src = isFish ? pool : meat;
+      var pat = baseMenus[src.v][d % 3];
+      var garr = ['Гречка (90 г сухой)', 'Рис (90 г сухой)', 'Перловка (90 г сухой)', 'Макароны (90 г сухих)', 'Гречка (90 г сухой)', 'Рис (90 г сухой)', 'Картофель отварной 250 г'][d];
+      if (P.garnish === 'Овсянка') garr = d === 6 ? 'Картофель отварной 250 г' : 'Овсянка (90 г сухой)';
+      if (P.garnish === 'Рис') garr = d === 6 ? 'Картофель отварной 250 г' : 'Рис (90 г сухой)';
+      if (P.garnish === 'Перловка') garr = d === 6 ? 'Картофель отварной 250 г' : 'Перловка (90 г сухой)';
+      if (P.garnish === 'Макароны тв.сортов') garr = d === 6 ? 'Картофель отварной 250 г' : 'Макароны (90 г сухих)';
+      if (P.garnish === 'Гречка') garr = d === 6 ? 'Картофель отварной 250 г' : 'Гречка (90 г сухой)';
+      if (P.garnish === 'Картофель') garr = 'Картофель отварной 250 г';
+
+      var veg = 'овощи в аэрогриле (кабачки, морковь, лук, болгарский перец) 200 г';
+      var salad = 'салат из огурцов, помидоров и зелени с маслом (10 мл)';
+      var sn1 = d % 3 === 0 ? 'Творог 5% 200 г, яблоко' : d % 3 === 1 ? 'Натуральный йогурт 200 г, груша' : 'Кефир 1% 200 мл, банан';
+      var sn2 = 'Овощной салат с маслом (10 мл), ржаной хлеб 60 г';
+
+      var meals = [
+        { t: 'Завтрак', d: pat.br + ', ' + garr.replace(' (90 г сухой)', '') + ', чай без сахара', k: pat.brk + 200 },
+        { t: 'Перекус', d: sn1, k: 300 },
+        { t: 'Обед', d: pat.ob + ' 200 г, ' + garr + ', ' + salad, k: pat.obk + 320 },
+        { t: 'Перекус', d: sn2, k: 340 },
+        { t: 'Ужин', d: pat.uz + ' 200 г, ' + veg + ', ржаной хлеб 30 г', k: pat.uzk + 180 }
+      ];
+      menuData.push(meals);
+    }
+  }
+
+  function adjust(meal, stage) {
+    if (stage === 0) return { d: meal.d, k: meal.k, changes: [] };
+    var d = meal.d, k = meal.k, changes = [];
+    var fac = [0, 0.8, 0.7, 0.6, 0.5, 0.5][stage];
+    var main = meal.t === 'Обед' || meal.t === 'Ужин';
+    var g = d.match(/(\d+) г сухой/);
+    if (g && main) {
+      var o = parseInt(g[1], 10), n = round10(o * fac);
+      d = d.replace(g[0], n + ' г сухой'); k -= Math.round((o - n) * 3.5); changes.push('гарнир ' + o + ' → ' + n + ' г');
+    }
+    if (d.indexOf('(10 мл)') !== -1 && stage > 0) { d = d.replace('(10 мл)', '(5 мл)'); k -= 45; changes.push('масло 10→5 мл'); }
+    return { d: d, k: k, changes: changes };
+  }
+
+  // === Рендер ===
+  function el(id) { return document.getElementById(id); }
+
+  function applyAvoids() {
+    el('allowedTable').innerHTML = '<tr><th>Группа</th><th>Что можно</th></tr>';
+    var avoid = P.avoid;
+    var meats = MEAT_OPTIONS.find(function (m){return m.v===P.meat;}).foods.slice();
+    var other = MEAT_OPTIONS.filter(function(m){return m.v!==P.meat && m.v!=='fish';}).map(function(m){return m.foods[0];});
+    var fish = MEAT_OPTIONS.find(function(m){return m.v==='fish';}).foods.join(', ');
+    if (avoid.indexOf('beef') !== -1) { /* no beef in base */ }
+    var allowed = [
+      ['Белки', 'Курица, индейка, рыба (' + fish + '), яйца, творог 5%, кефир, греческий йогурт, сыр, чечевица и фасоль (1–2 раза/нед). Молоко — каши на воде. Говядина, свинина — по предпочтениям исключены'],
+      ['Углеводы', P.garnish + ', картофель, ржаной/цельнозерновой хлеб, яблоки, груши, апельсины, бананы, ягоды, сухофрукты, джем'],
+      ['Овощи', VEG_SAFE.join(', ')]
+    ];
+    if (avoid.indexOf('cabbage') !== -1 || avoid.indexOf('beets') !== -1 || avoid.indexOf('pumpkin') !== -1 || avoid.indexOf('cauliflower') !== -1 || avoid.indexOf('broccoli') !== -1 || avoid.indexOf('mushrooms') !== -1 || avoid.indexOf('radish') !== -1) {
+      allowed[2][1] += '. <b>Исключены (газообразование):</b> капуста, свёкла, тыква, цветная капуста, брокколи, грибы, редис, редька';
+    }
+    if (avoid.indexOf('nuts') !== -1) allowed.push(['Жиры', 'Растительное масло до 1–2 ст.л., семечки подсолнечника/тыквы 20–30 г. Орехи исключены']);
+    else allowed.push(['Жиры', 'Растительное масло до 1–2 ст.л., семечки, орехи 20–30 г']);
+    allowed.push(['Напитки', 'Вода 2,5–3 л, чай зелёный/чёрный, кофе без сахара']);
+    allowed.forEach(function (r) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td><b>' + r[0] + '</b></td><td>' + r[1] + '</td>';
+      el('allowedTable').appendChild(tr);
+    });
+  }
+
+  function renderPlan() {
+    var a = P.avoid;
+    // Stats
+    var bmi = P.weight / Math.pow(P.height / 100, 2);
+    var left = Math.max(0, P.weight - P.target);
+    var pct = Math.max(0, Math.min(100, ((P.weight0 - P.weight) / (P.weight0 - P.target)) * 100));
+    el('dynStats').innerHTML = [
+      '<div class="stat"><span>Возраст</span><b>' + P.age + ' лет</b></div>',
+      '<div class="stat"><span>Рост</span><b>' + P.height + ' см</b></div>',
+      '<div class="stat"><span>Вес сейчас</span><b>' + P.weight + ' кг</b></div>',
+      '<div class="stat"><span>Целевой вес</span><b>' + P.target + ' кг</b></div>',
+      '<div class="stat"><span>Стартовая калорийность</span><b>' + startKcal + ' ккал</b></div>'
+    ].join('');
+    el('bmiOutput').innerHTML = '<b>ИМТ: ' + bmi.toFixed(1) + '</b> — ' +
+      (bmi < 18.5 ? 'дефицит' : bmi < 25 ? 'норма' : bmi < 30 ? 'избыточный вес' : bmi < 35 ? 'ожирение I ст.' : bmi < 40 ? 'ожирение II ст.' : 'ожирение III ст.') +
+      '<br>До цели: <b>' + left.toFixed(1) + ' кг</b> · прогресс от ' + P.weight0 + ' кг: <b>' + pct.toFixed(1) + '%</b>';
+    // Sec1
+    el('sec1List').innerHTML = [
+      '<li><b>Плавное снижение калорийности</b> от ' + startKcal + ' ккал, без резких скачков.</li>',
+      '<li>Персональный план с учётом ваших параметров и предпочтений.</li>',
+      '<li>Темп похудения: <b>0,5–1 кг в неделю</b>.</li>',
+      '<li>Ориентировочный срок до ' + P.target + ' кг: <b>' + Math.max(1, Math.round(left / 0.7)) + '–' + Math.max(2, Math.round(left / 0.4)) + ' месяцев</b> при соблюдении.</li>',
+      '<li>Целевой вес даст ИМТ ≈ ' + (P.target / Math.pow(P.height / 100, 2)).toFixed(1) + ' — ' + ((P.target / Math.pow(P.height / 100, 2)) < 25 ? 'в пределах нормы' : 'верхняя граница нормы/избыток — цель стоит скорректировать с врачом') + '.</li>'
+    ].join('');
+    el('personalNote').textContent = 'Индивидуальные особенности: пол — ' + (P.gender === 'm' ? 'мужчина' : 'женщина') + ', возраст ' + P.age + ', рост ' + P.height + ' см, стартовый вес ' + P.weight0 + ' кг, целевой ' + P.target + ' кг, активность: ' + (P.activity === '1.2' ? 'сидячая' : P.activity === '1.375' ? 'лёгкая' : P.activity === '1.55' ? 'средняя' : 'высокая') + '. Выбранные исключения учтены, меню сформировано из предпочтительных продуктов.';
+    el('docWarn').innerHTML = '<b>Важно:</b> перед началом программы проконсультируйтесь с врачом. При высоком ИМТ (' + bmi.toFixed(1) + ') нагрузка на суставы и сердце высокая, резкие диеты противопоказаны.';
+    // Stage table
+    var rows = [
+      ['1', '1–2 мес.', '<b>' + stages[0] + ' ккал</b>', 'Адаптация к режиму'],
+      ['2', '3–4 мес.', '<b>' + stages[1] + ' ккал</b>', 'Плавное снижение'],
+      ['3', '5–6 мес.', '<b>' + stages[2] + ' ккал</b>', 'Жиросжигающий этап'],
+      ['4', '7–9 мес.', '<b>' + stages[3] + ' ккал</b>', 'Продолжаем'],
+      ['5', '10–12 мес.', '<b>' + stages[4] + ' ккал</b>', 'Замедление — нормально'],
+      ['6', 'далее', '<b>' + stages[5] + ' ккал</b>', '<b>Минимум — ниже не опускаться</b>']
+    ];
+    rows.forEach(function (r) { var tr = document.createElement('tr'); tr.innerHTML = r.map(function(c){return '<td>'+c+'</td>';}).join(''); el('stageTable').appendChild(tr); });
+    el('stageNote').innerHTML = '<b>Как переходить:</b> вес стоит 2–3 недели — снижайте на 100–150 ккал. Худеете быстрее 1 кг/нед — верните 100–200 ккал.';
+    // BJU
+    var bju = [[startKcal, Math.round(P.protein), Math.round(startKcal*0.25/9), Math.round((startKcal - P.protein*4 - startKcal*0.25)/4)]];
+    [2500,2300,2100,1900,1800].forEach(function(k){ if(k<startKcal) bju.push([k, Math.max(120, Math.round(P.protein*k/startKcal)), Math.round(k*0.25/9), Math.round((k - P.protein*k/startKcal*4 - k*0.25)/4)]); });
+    bju.forEach(function(r){ var tr=document.createElement('tr'); tr.innerHTML='<td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td>'; el('bjuTable').appendChild(tr); });
+    el('bjuText').textContent = 'Белки держим на уровне ' + P.protein + ' г (≈2 г на кг целевого веса), жиры ~25% рациона, углеводы снижаем в первую очередь.';
+    // Avoid list
+    var avItems = [
+      'Сахар, конфеты, торты, сладкая выпечка', 'Газировка, пакетированные соки',
+      'Колбасы, сосиски, копчёности, полуфабрикаты', 'Майонез и жирные соусы',
+      'Фастфуд, чипсы, алкоголь', 'Соль — до 5 г в день',
+      'Жареное в масле (только варка, аэрогриль, духовка)'
+    ];
+    avItems.forEach(function(it){ var li=document.createElement('li'); li.textContent=it; el('avoidList').appendChild(li); });
+    avItems.forEach(function(){});
+    ['beef','nuts','milk','kefir','cheese','yogurt','cabbage','beets','pumpkin','cauliflower','broccoli','mushrooms','radish','soup','steamed','pork','processed','honey','mustard','chicory'].forEach(function(key){
+      if (a.indexOf(key) !== -1) {
+        var li = document.createElement('li');
+        li.innerHTML = '<b>' + AVOID_ALL[key] + ' — исключено</b> (ваш выбор)';
+        el('avoidList').appendChild(li);
+      }
+    });
+    el('legumeNote').textContent = 'Чечевицу и фасоль — не чаще 1–2 раз в неделю небольшими порциями, следите за реакцией.';
+    // Menu desc
+    el('menuDesc').textContent = 'Меню сформировано персонально: основной белок — ' + MEAT_OPTIONS.find(function(m){return m.v===P.meat;}).t + ', гарнир — ' + P.garnish + ', рыба — ' + P.fishDays + ' дня в неделю. Учтены все исключения. Калорийность приблизительная (±5%). Готовим варкой, аэрогрилем, духовкой.';
+    // Menu rendering
+    currentStage = 0; currentDay = Math.min(currentDay, 6);
+    renderMenuControls();
+    renderMenu();
+  }
+
+  function renderMenuControls() {
+    var sb = el('stageButtons'); sb.innerHTML = '';
+    stages.forEach(function (k, i) {
+      var b = document.createElement('button'); b.type='button'; b.className='stage-btn'; b.textContent=k+' ккал'; b.dataset.stage=i;
+      b.onclick = function(){ currentStage=parseInt(this.dataset.stage,10); renderMenu(); };
+      sb.appendChild(b);
+    });
+    var tb = el('dayTabs'); tb.innerHTML = '';
+    for (var d=0; d<7; d++) {
+      (function(di){
+        var b = document.createElement('button'); b.type='button'; b.className='day-tab'; b.textContent='День '+(di+1); b.dataset.day=di;
+        b.onclick = function(){ currentDay=parseInt(this.dataset.day,10); renderMenu(); };
+        tb.appendChild(b);
+      })(d);
+    }
+  }
+
+  function renderMenu() {
+    var stageK = stages[currentStage];
+    el('dayMenuTitle').textContent = '📅 День ' + (currentDay + 1) + ' · этап ' + stageK + ' ккал';
+    var meals = menuData[currentDay];
+    var html = '<table><tr><th style="width:30px">✓</th><th style="width:90px">Приём</th><th>Что есть</th><th style="width:70px">ккал</th></tr>';
+    var total = 0;
+    meals.forEach(function (meal, mi) {
+      var id = 'd'+currentDay+'r'+mi;
+      var removed = (currentStage > 0 && mi === 1);
+      if (removed) {
+        html += '<tr class="meal-hidden"><td></td><td>'+meal.t+'</td><td>'+meal.d+'</td><td></td></tr>';
+      } else {
+        var adj = adjust(meal, currentStage);
+        total += adj.k;
+        var note = adj.changes.length ? '<br><span style="color:#1f6f5c;font-size:.8rem;font-weight:600">→ '+adj.changes.join('; ')+'</span>' : '';
+        var ch = checks[id] ? ' checked' : '';
+        html += '<tr><td><input type="checkbox" class="meal-check" data-meal="'+id+'"'+ch+'></td><td>'+meal.t+'</td><td>'+adj.d+note+'</td><td>'+adj.k+'</td></tr>';
+      }
+    });
+    html += '<tr class="total-stage"><td colspan="3">Итого на этапе '+stageK+' ккал</td><td>≈ '+total+' ккал</td></tr></table>';
+    el('dayMenuTable').innerHTML = html;
+    var hs = el('dayMenuTable').querySelectorAll('.meal-check');
+    Array.prototype.forEach.call(hs, function(cb){
+      cb.onchange = function(){ checks[this.dataset.meal]=this.checked; updateProgress(); };
+    });
+    updateProgress();
+    // Stage info
+    el('stageInfo').textContent = stageHints[currentStage];
+  }
+
+  function updateProgress() {
+    var cbs = el('dayMenuTable').querySelectorAll('.meal-check');
+    var t=0,d=0;
+    Array.prototype.forEach.call(cbs, function(cb){ t++; if(cb.checked) d++; });
+    var pct = t ? Math.round(d/t*100) : 0;
+    el('progressFill').style.width = pct+'%';
+    el('progressText').textContent = 'Выполнено: '+d+' из '+t+' ('+pct+'%)';
+  }
+
+  var stageHints = [];
+
+  function buildPlan() {
+    P.gender = el('pGender').value;
+    P.age = parseInt(el('pAge').value, 10) || 35;
+    P.height = parseInt(el('pHeight').value, 10) || 183;
+    P.weight = parseFloat(el('pWeight').value) || 127;
+    P.target = parseFloat(el('pTarget').value) || 85;
+    P.activity = el('pActivity').value;
+    P.meat = el('pMeat').value;
+    P.garnish = el('pGarnish').value;
+    P.fishDays = el('pFishDays').value;
+    P.avoid = Array.prototype.map.call(el('avoidWrap').querySelectorAll('input:checked'), function(c){ return c.value; });
+    if (P.target >= P.weight) { alert('Целевой вес должен быть меньше текущего.'); return; }
+
+    var bmr = calcBMR(P.gender, P.age, P.height, P.weight);
+    var tdee = Math.round(bmr * parseFloat(P.activity));
+    startKcal = round10(tdee * 0.82); // дефицит ~18%
+    P.protein = Math.round(P.target * 2);
+    P.weight0 = P.weight;
+    // Stages
+    stages = [startKcal];
+    var k = startKcal;
+    [0,0,200,200,200,100].forEach(function(){});
+    var drops = [200, 200, 200, 200, 100];
+    drops.forEach(function(dr){ k -= dr; if (k < 1800) k = 1800; stages.push(k); });
+    while (stages.length > 6) stages.pop();
+    if (stages[stages.length-1] > 1800) stages.pop();
+    if (stages.length < 6) { k = stages[stages.length-1]; while(stages.length<6){ k=Math.max(1800,k-100); stages.push(k); } }
+    stageHints = stages.map(function(sk, i){
+      if (i===0) return 'Старт: следуйте полному меню — 5 приёмов, гарниры по рецепту, '+(P.garnish==='Картофель'?'картофель до 2 раз в неделю':'крупа по рецепту')+'.';
+      if (i===1) return 'Этап '+sk+' ккал: убрать второй перекус, гарниры чуть меньше, масло 1 ст.л.';
+      if (i===2) return 'Этап '+sk+' ккал: гарниры на треть меньше, хлеб до 1 куска, масло 1 ч.л.';
+      if (i===3) return 'Этап '+sk+' ккал: сухофрукты и джем убраны, строго по методу тарелки.';
+      if (i===4) return 'Этап '+sk+' ккал: сладкие фрукты только утром, хлеб 0–1 кусок.';
+      return 'Этап '+sk+' ккал: минимум для '+(P.gender==='m'?'мужчины':'женщины')+'. Ниже не опускаться!';
+    });
+    buildDays();
+    applyAvoids();
+    el('prefsPanel').style.display = '';
+    el('planContainer').style.display = '';
+    window.scrollTo(0, 300);
+    renderPlan();
+  }
+
+  function resetAll() {
+    ['paramsPanel','prefsPanel','planContainer'].forEach(function(id){ el(id).style.display = 'none'; });
+    el('paramsPanel').style.display = '';
+    el('planContainer').style.display = 'none';
+    try { localStorage.clear(); } catch(e){}
+    checks = {};
+  }
+
+  // === Инициализация селекторов ===
+  var avoidWrap = el('avoidWrap');
+  Object.keys(AVOID_ALL).forEach(function (key) {
+    var label = document.createElement('label');
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = key;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(AVOID_ALL[key]));
+    avoidWrap.appendChild(label);
+  });
+  ['свинина', 'орехи'].forEach(function(){});
+  MEAT_OPTIONS.forEach(function (m) {
+    var o = document.createElement('option'); o.value = m.v; o.textContent = m.t;
+    el('pMeat').appendChild(o);
+  });
+  GARNISH_OPTIONS.forEach(function (g) {
+    var o = document.createElement('option'); o.value = g; o.textContent = g;
+    el('pGarnish').appendChild(o);
+  });
+
+  window.buildPlan = buildPlan;
+  window.resetAll = resetAll;
+})();
+</script>
+</body>
+</html>
