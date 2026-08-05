@@ -32,6 +32,10 @@
   .check-grid label { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 400; }
   .check-grid input { width: 18px; height: 18px; accent-color: #1f6f5c; }
   .select-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .meal-select { width: 100%; padding: 6px 10px; border: 2px solid #c7d8d0; border-radius: 8px; font-size: .9rem; background: #fff; color: #2d3436; }
+  .meal-select:focus { border-color: #1f6f5c; outline: none; }
+  .meal-desc { display: block; margin-top: 6px; font-size: .92rem; }
+  .meal-changes { display: block; font-size: .8rem; font-weight: 600; color: #1f6f5c; }
   .btn { background: #1f6f5c; color: #fff; border: none; padding: 12px 28px; border-radius: 30px; font-size: 1.02rem; cursor: pointer; margin-top: 12px; font-weight: 700; }
   .btn:hover { background: #185545; }
   .btn-reset { background: #95a5a6; }
@@ -183,28 +187,6 @@
     <div class="panel" id="dayMenuContainer">
       <h3 id="dayMenuTitle">📅 День 1</h3>
       <div id="dayMenuTable"></div>
-    </div>
-
-    <div class="panel no-print">
-      <h3>🎯 Быстрый выбор приёма пищи</h3>
-      <p style="font-size:.9rem; color:#666;">Выберите день и приём — покажем конкретное блюдо (с учётом вашего этапа калорийности).</p>
-      <div class="select-row">
-        <div>
-          <label for="pickDay">День</label>
-          <select id="pickDay"></select>
-        </div>
-        <div>
-          <label for="pickMeal">Приём пищи</label>
-          <select id="pickMeal">
-            <option value="0">Завтрак</option>
-            <option value="1">Перекус 1</option>
-            <option value="2">Обед</option>
-            <option value="3">Перекус 2</option>
-            <option value="4">Ужин</option>
-          </select>
-        </div>
-      </div>
-      <div class="bmi-output" id="pickResult"></div>
     </div>
 
     <h2>7. Как снижать калорийность на следующих этапах</h2>
@@ -582,39 +564,6 @@
     currentStage = 0; currentDay = Math.min(currentDay, 6);
     renderMenuControls();
     renderMenu();
-    initQuickPicker();
-  }
-
-  // === Быстрый выбор приёма из любого дня ===
-  function initQuickPicker() {
-    var pickDay = el('pickDay');
-    var pickMeal = el('pickMeal');
-    pickDay.innerHTML = '';
-    for (var d = 0; d < 7; d++) {
-      var o = document.createElement('option');
-      o.value = d; o.textContent = 'День ' + (d + 1);
-      pickDay.appendChild(o);
-    }
-    pickDay.value = currentDay;
-    pickMeal.value = '0';
-    pickDay.onchange = renderPick;
-    pickMeal.onchange = renderPick;
-    renderPick();
-  }
-
-  function renderPick() {
-    var d = parseInt(el('pickDay').value, 10);
-    var mi = parseInt(el('pickMeal').value, 10);
-    var meals = menuData[d];
-    if (!meals || !meals[mi]) { el('pickResult').innerHTML = 'Выберите день и приём.'; return; }
-    var meal = meals[mi];
-    var adj = adjust(meal, currentStage);
-    var removedNote = (currentStage > 0 && mi === 1) ? '<br><span style="color:#c0392b; font-weight:600;">⚠ на этапе ' + stages[currentStage] + ' ккал второй перекус убран</span>' : '';
-    var changes = adj.changes.length ? '<br><span style="color:#1f6f5c; font-weight:600;">→ ' + adj.changes.join('; ') + '</span>' : '';
-    el('pickResult').innerHTML =
-      '<b>День ' + (d + 1) + ' · ' + meal.t + ' · этап ' + stages[currentStage] + ' ккал</b><br>' +
-      adj.d + changes + removedNote +
-      '<br><b>Калорийность: ≈ ' + adj.k + ' ккал</b>';
   }
 
   function renderMenuControls() {
@@ -646,29 +595,65 @@
       b.classList.toggle('active', parseInt(b.getAttribute('data-day'), 10) === currentDay);
     });
 
-    var meals = menuData[currentDay];
-    var html = '<table><tr><th style="width:30px">✓</th><th style="width:90px">Приём</th><th>Что есть</th><th style="width:70px">ккал</th></tr>';
+    var MEAL_TYPES = ['Завтрак', 'Перекус 1', 'Обед', 'Перекус 2', 'Ужин'];
+    var html = '<table><tr><th style="width:30px">✓</th><th style="width:100px">Приём</th><th>Что есть (выберите вариант из любого дня)</th><th style="width:70px">ккал</th></tr>';
     var total = 0;
-    meals.forEach(function (meal, mi) {
-      var id = 'd'+currentDay+'r'+mi;
+
+    for (var mi = 0; mi < 5; mi++) {
+      var id = 'd' + currentDay + 'r' + mi;
       var removed = (currentStage > 0 && mi === 1);
       if (removed) {
-        html += '<tr class="meal-hidden"><td></td><td>'+meal.t+'</td><td>'+meal.d+'</td><td></td></tr>';
-      } else {
-        var adj = adjust(meal, currentStage);
-        total += adj.k;
-        var note = adj.changes.length ? '<br><span style="color:#1f6f5c;font-size:.8rem;font-weight:600">→ '+adj.changes.join('; ')+'</span>' : '';
-        var ch = checks[id] ? ' checked' : '';
-        html += '<tr><td><input type="checkbox" class="meal-check" data-meal="'+id+'"'+ch+'></td><td>'+meal.t+'</td><td>'+adj.d+note+'</td><td>'+adj.k+'</td></tr>';
+        html += '<tr class="meal-hidden"><td></td><td>' + MEAL_TYPES[mi] + '</td><td>' + menuData[currentDay][mi].d + '</td><td></td></tr>';
+        continue;
       }
-    });
-    html += '<tr class="total-stage"><td colspan="3">Итого на этапе '+stageK+' ккал</td><td>≈ '+total+' ккал</td></tr></table>';
+      var ch = checks[id] ? ' checked' : '';
+      html += '<tr><td><input type="checkbox" class="meal-check" data-meal="' + id + '"' + ch + '></td><td>' + MEAL_TYPES[mi] + '</td><td>';
+      // Раскрывающийся список: все варианты приёма из всех 7 дней
+      html += '<select class="meal-select" data-mi="' + mi + '">';
+      for (var d = 0; d < 7; d++) {
+        var m = menuData[d][mi];
+        var adj = adjust(m, currentStage);
+        var sel = (d === currentDay) ? ' selected' : '';
+        html += '<option value="' + d + '"' + sel + ' data-k="' + adj.k + '">День ' + (d + 1) + ': ' + adj.d + '</option>';
+      }
+      html += '</select>';
+      // Описание выбранного блюда
+      var firstAdj = adjust(menuData[currentDay][mi], currentStage);
+      total += firstAdj.k;
+      html += '<span class="meal-desc" id="desc' + mi + '">' + firstAdj.d + '</span>';
+      html += '<span class="meal-changes" id="chg' + mi + '">' + (firstAdj.changes.length ? '→ ' + firstAdj.changes.join('; ') : '') + '</span>';
+      html += '</td><td><span id="kcal' + mi + '">' + firstAdj.k + '</span></td></tr>';
+    }
+    html += '<tr class="total-stage"><td colspan="3">Итого на этапе ' + stageK + ' ккал</td><td>≈ ' + total + ' ккал</td></tr></table>';
     el('dayMenuTable').innerHTML = html;
+
+    // Смена варианта в раскрывающемся списке
+    Array.prototype.forEach.call(el('dayMenuTable').querySelectorAll('.meal-select'), function (sel) {
+      sel.onchange = function () {
+        var mi = parseInt(this.getAttribute('data-mi'), 10);
+        var d = parseInt(this.value, 10);
+        var meal = menuData[d][mi];
+        var adj = adjust(meal, currentStage);
+        el('desc' + mi).textContent = adj.d;
+        el('chg' + mi).textContent = adj.changes.length ? '→ ' + adj.changes.join('; ') : '';
+        el('kcal' + mi).textContent = adj.k;
+        recalcTotal();
+      };
+    });
     Array.prototype.forEach.call(el('dayMenuTable').querySelectorAll('.meal-check'), function(cb){
       cb.onchange = function(){ checks[this.getAttribute('data-meal')]=this.checked; updateProgress(); };
     });
     updateProgress();
     el('stageInfo').textContent = stageHints[currentStage];
+  }
+
+  function recalcTotal() {
+    var sum = 0;
+    Array.prototype.forEach.call(el('dayMenuTable').querySelectorAll('.meal-select'), function (sel) {
+      sum += parseInt(sel.options[sel.selectedIndex].getAttribute('data-k'), 10);
+    });
+    var cell = el('dayMenuTable').querySelector('.total-stage td:last-child');
+    if (cell) cell.textContent = '≈ ' + sum + ' ккал';
   }
 
   function updateProgress() {
