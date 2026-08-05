@@ -185,6 +185,28 @@
       <div id="dayMenuTable"></div>
     </div>
 
+    <div class="panel no-print">
+      <h3>🎯 Быстрый выбор приёма пищи</h3>
+      <p style="font-size:.9rem; color:#666;">Выберите день и приём — покажем конкретное блюдо (с учётом вашего этапа калорийности).</p>
+      <div class="select-row">
+        <div>
+          <label for="pickDay">День</label>
+          <select id="pickDay"></select>
+        </div>
+        <div>
+          <label for="pickMeal">Приём пищи</label>
+          <select id="pickMeal">
+            <option value="0">Завтрак</option>
+            <option value="1">Перекус 1</option>
+            <option value="2">Обед</option>
+            <option value="3">Перекус 2</option>
+            <option value="4">Ужин</option>
+          </select>
+        </div>
+      </div>
+      <div class="bmi-output" id="pickResult"></div>
+    </div>
+
     <h2>7. Как снижать калорийность на следующих этапах</h2>
     <table id="reduceTable"><tr><th>Что сделать</th><th>≈ минус ккал</th></tr></table>
     <ul id="reduceSteps"></ul>
@@ -560,6 +582,39 @@
     currentStage = 0; currentDay = Math.min(currentDay, 6);
     renderMenuControls();
     renderMenu();
+    initQuickPicker();
+  }
+
+  // === Быстрый выбор приёма из любого дня ===
+  function initQuickPicker() {
+    var pickDay = el('pickDay');
+    var pickMeal = el('pickMeal');
+    pickDay.innerHTML = '';
+    for (var d = 0; d < 7; d++) {
+      var o = document.createElement('option');
+      o.value = d; o.textContent = 'День ' + (d + 1);
+      pickDay.appendChild(o);
+    }
+    pickDay.value = currentDay;
+    pickMeal.value = '0';
+    pickDay.onchange = renderPick;
+    pickMeal.onchange = renderPick;
+    renderPick();
+  }
+
+  function renderPick() {
+    var d = parseInt(el('pickDay').value, 10);
+    var mi = parseInt(el('pickMeal').value, 10);
+    var meals = menuData[d];
+    if (!meals || !meals[mi]) { el('pickResult').innerHTML = 'Выберите день и приём.'; return; }
+    var meal = meals[mi];
+    var adj = adjust(meal, currentStage);
+    var removedNote = (currentStage > 0 && mi === 1) ? '<br><span style="color:#c0392b; font-weight:600;">⚠ на этапе ' + stages[currentStage] + ' ккал второй перекус убран</span>' : '';
+    var changes = adj.changes.length ? '<br><span style="color:#1f6f5c; font-weight:600;">→ ' + adj.changes.join('; ') + '</span>' : '';
+    el('pickResult').innerHTML =
+      '<b>День ' + (d + 1) + ' · ' + meal.t + ' · этап ' + stages[currentStage] + ' ккал</b><br>' +
+      adj.d + changes + removedNote +
+      '<br><b>Калорийность: ≈ ' + adj.k + ' ккал</b>';
   }
 
   function renderMenuControls() {
