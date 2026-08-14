@@ -7,6 +7,22 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f6f4; color: #2d3436; line-height: 1.55; }
+  /* ===== Экран входа ===== */
+  #loginScreen{position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1f6f5c,#2e8b74);font-family:'Segoe UI',Arial,sans-serif}
+  #loginScreen .login-card{background:#fff;border-radius:16px;padding:36px 34px;width:340px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+  #loginScreen .login-logo{width:64px;height:64px;object-fit:contain;margin-bottom:14px}
+  #loginScreen h2{margin:0 0 6px;color:#2d3436;font-size:22px;font-weight:800}
+  #loginScreen .login-sub{color:#999;font-size:13px;margin:0 0 22px}
+  #loginScreen label{display:block;text-align:left;font-size:11px;font-weight:700;color:#8A8A8A;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
+  #loginScreen input[type=text],#loginScreen input[type=password]{width:100%;padding:11px 14px;border:1px solid #dde7e2;border-radius:10px;font-size:15px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;box-sizing:border-box;background:#fff}
+  #loginScreen input[type=text]:focus,#loginScreen input[type=password]:focus{border-color:#1f6f5c;box-shadow:0 0 0 3px rgba(31,111,92,.12)}
+  #loginScreen .login-btn{width:100%;margin-top:22px;padding:12px;border:0;border-radius:10px;background:#1f6f5c;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s;letter-spacing:.3px}
+  #loginScreen .login-btn:hover{opacity:.85}
+  #loginScreen .login-err{display:none;color:#c0392b;font-size:13px;font-weight:600;margin-top:14px;background:#fdeeee;border:1px solid #f5c6c0;border-radius:8px;padding:8px 10px}
+  #loginScreen .login-err.show{display:block}
+  #loginScreen .login-hint{margin-top:16px;font-size:11.5px;color:#B5B5B5;line-height:1.6}
+  #app{display:none}
+  #app.visible{display:block}
   .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
   header.hero { background: linear-gradient(135deg, #1f6f5c, #2e8b74); color: #fff; border-radius: 14px; padding: 30px 28px; margin-bottom: 22px; }
   header.hero h1 { font-size: 1.7rem; margin-bottom: 6px; }
@@ -85,7 +101,21 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<!-- ===== Экран входа ===== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>Программа питания</h2>
+    <p class="login-sub">Вход для сотрудников</p>
+    <label for="loginUser">Логин</label>
+    <input type="text" id="loginUser" autocomplete="username" placeholder="Введите логин">
+    <label for="loginPass">Пароль</label>
+    <input type="password" id="loginPass" autocomplete="current-password" placeholder="Введите пароль">
+    <button class="login-btn" id="loginBtn">Войти</button>
+    <div class="login-err" id="loginErr">Неверный логин или пароль</div>
+    <div class="login-hint">Доступ ограничен.<br>Введите учётные данные для продолжения.</div>
+  </div>
+</div>
+<div class="wrap" id="app">
 
   <header class="hero">
     <h1>🍽 Индивидуальная программа питания</h1>
@@ -978,6 +1008,55 @@
   window.selectAllAvoids = selectAllAvoids;
   window.clearAvoids = clearAvoids;
   window.toggleDD = toggleDD;
+})();
+</script>
+<script>
+/* ===== Авторизация ===== */
+(function(){
+  'use strict';
+  var LOGIN='RRY';
+  var PASS_HASH='f83b84647fe4cba07537780966d54317ddfc786408c5c9bd373aff9de6c5c1a1';
+  var AUTH_KEY='diet_plan_auth';
+  function sha256(str){
+    if(window.crypto&&crypto.subtle&&crypto.subtle.digest){
+      return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(buf){
+        return Array.prototype.map.call(new Uint8Array(buf),function(b){return('0'+b.toString(16)).slice(-2)}).join('');
+      });
+    }
+    return Promise.resolve('');
+  }
+  function showErr(){var e=document.getElementById('loginErr');if(e){e.classList.add('show');setTimeout(function(){e.classList.remove('show')},2500)}}
+  function unlock(){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').classList.add('visible');
+    try{sessionStorage.setItem(AUTH_KEY,'1')}catch(e){}
+    if(typeof window.afterUnlock==='function')try{window.afterUnlock()}catch(e){}
+  }
+  function tryLogin(){
+    var u=document.getElementById('loginUser').value.trim();
+    var p=document.getElementById('loginPass').value;
+    sha256(p).then(function(h){
+      if(u===LOGIN&&h===PASS_HASH){unlock()}
+      else{document.getElementById('loginPass').value='';showErr()}
+    });
+  }
+  document.getElementById('loginBtn').addEventListener('click',tryLogin);
+  document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')tryLogin()});
+  document.getElementById('loginUser').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('loginPass').focus()});
+  var authed=false;
+  try{authed=sessionStorage.getItem(AUTH_KEY)==='1'}catch(e){}
+  if(authed){
+    unlock();
+    document.getElementById('app').classList.add('visible');
+  }else{
+    document.getElementById('loginScreen').style.display='flex';
+    setTimeout(function(){try{document.getElementById('loginUser').focus()}catch(e){}},100);
+  }
+  window.addEventListener('pageshow',function(){
+    try{authed=sessionStorage.getItem(AUTH_KEY)==='1'}catch(e){}
+    if(authed){unlock()}
+  });
+  document.addEventListener('contextmenu',function(e){if(e.target.closest&&e.target.closest('#loginScreen'))e.preventDefault()});
 })();
 </script>
 </body>
